@@ -23,6 +23,7 @@ func NewAPIServer(listenAddr string, store Storage) *ApiServer {
 func (s *ApiServer) Run() {
 	router := mux.NewRouter()
 	router.HandleFunc("/account", handleRequest(s.handleCreateAccount)).Methods("POST")
+	router.HandleFunc("/account", handleRequest(s.handleGetAccounts)).Methods("GET")
 	router.HandleFunc("/account/{id}", handleRequest(s.handleGetAccount)).Methods("GET")
 	router.HandleFunc("/account/{id}", handleRequest(s.handleDeleteAccount)).Methods("DELETE")
 	router.HandleFunc("/transfer", handleRequest(s.handleTransfer)).Methods("POST")
@@ -62,6 +63,15 @@ func (s *ApiServer) handleDeleteAccount(w http.ResponseWriter, r *http.Request) 
 	fmt.Println(id)
 
 	return nil
+}
+
+func (s *ApiServer) handleGetAccounts(w http.ResponseWriter, r *http.Request) error {
+	accounts, err := s.store.GetAccounts()
+	if err != nil {
+		return err
+	}
+
+	return WriteJSON(w, http.StatusOK, accounts)
 }
 
 func (s *ApiServer) handleTransfer(w http.ResponseWriter, r *http.Request) error {
