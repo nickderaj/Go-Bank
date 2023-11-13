@@ -46,18 +46,18 @@ func (s *PostgresStore) createAccountTable() error {
 	return err
 }
 
-func (s *PostgresStore) createAccount(a *Account) error {
+func (s *PostgresStore) CreateAccount(a *Account) error {
 	return nil
 }
 
-func (s *PostgresStore) updateAccount(a *Account) error {
+func (s *PostgresStore) UpdateAccount(a *Account) error {
 	return nil
 }
 
-func (s *PostgresStore) deleteAccount(id int) error {
+func (s *PostgresStore) DeleteAccount(id int) error {
 	return nil
 }
 
-func (s *PostgresStore) getAccountById(id int) (*Account, error) {
+func (s *PostgresStore) GetAccountById(id int) (*Account, error) {
 	return nil, nil
 }
