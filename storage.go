@@ -53,12 +53,10 @@ func (s *PostgresStore) CreateAccount(acc *Account) error {
     		(first_name, last_name, number, balance)
     		values ($1, $2, $3, $4);`
 
-	res, err := s.db.Exec(query, acc.FirstName, acc.LastName, acc.Number, acc.Balance)
-
+	_, err := s.db.Exec(query, acc.FirstName, acc.LastName, acc.Number, acc.Balance)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("meow: %+v\n", res)
 
 	return nil
 }
@@ -68,7 +66,8 @@ func (s *PostgresStore) UpdateAccount(a *Account) error {
 }
 
 func (s *PostgresStore) DeleteAccount(id int) error {
-	return nil
+	_, err := s.db.Exec("delete from accounts where id = $1", id)
+	return err
 }
 
 func (s *PostgresStore) GetAccounts() ([]*Account, error) {
@@ -99,7 +98,7 @@ func (s *PostgresStore) GetAccountById(id int) (*Account, error) {
 		return scanIntoAccount(rows)
 	}
 
-	return nil, fmt.Errorf("Account %d not found", id)
+	return nil, fmt.Errorf("account %d not found", id)
 }
 
 func scanIntoAccount(rows *sql.Rows) (*Account, error) {

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -38,10 +39,9 @@ func (s *ApiServer) Run() {
 }
 
 func (s *ApiServer) handleGetAccount(w http.ResponseWriter, r *http.Request) error {
-	idStr := mux.Vars(r)["id"]
-	id, err := strconv.Atoi(idStr)
+	id, err := parseId(r)
 	if err != nil {
-		return fmt.Errorf("Invalid account id: %s", idStr)
+		return err
 	}
 
 	account, err := s.store.GetAccountById(id)
@@ -67,10 +67,16 @@ func (s *ApiServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) 
 }
 
 func (s *ApiServer) handleDeleteAccount(w http.ResponseWriter, r *http.Request) error {
-	id := mux.Vars(r)["id"]
-	fmt.Println(id)
+	id, err := parseId(r)
+	if err != nil {
+		return err
+	}
 
-	return nil
+	if err := s.store.DeleteAccount(id); err != nil {
+		return err
+	}
+
+	return WriteJSON(w, http.StatusOK, map[string]int{"deleted:": id})
 }
 
 func (s *ApiServer) handleGetAccounts(w http.ResponseWriter, r *http.Request) error {
@@ -83,7 +89,18 @@ func (s *ApiServer) handleGetAccounts(w http.ResponseWriter, r *http.Request) er
 }
 
 func (s *ApiServer) handleTransfer(w http.ResponseWriter, r *http.Request) error {
-	return nil
+	transferReq := new(TransferRequest)
+	if err := json.NewDecoder(r.Body).Decode(transferReq); err != nil {
+		return err
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Println("Error closing body: ", err)
+		}
+	}(r.Body)
+
+	return WriteJSON(w, http.StatusOK, transferReq)
 }
 
 func WriteJSON(w http.ResponseWriter, status int, v any) error {
@@ -95,7 +112,7 @@ func WriteJSON(w http.ResponseWriter, status int, v any) error {
 type ApiFunc func(w http.ResponseWriter, r *http.Request) error
 
 type ApiError struct {
-	Error string
+	Error string `json:"error"`
 }
 
 func handleRequest(f ApiFunc) http.HandlerFunc {
@@ -107,4 +124,13 @@ func handleRequest(f ApiFunc) http.HandlerFunc {
 			}
 		}
 	}
+}
+
+func parseId(r *http.Request) (int, error) {
+	idStr := mux.Vars(r)["id"]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return 0, fmt.Errorf("invalid account id: %s", idStr)
+	}
+	return id, nil
 }
