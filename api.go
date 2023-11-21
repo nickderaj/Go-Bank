@@ -26,7 +26,7 @@ func (s *ApiServer) Run() {
 	router := mux.NewRouter()
 	router.HandleFunc("/account", handleRequest(s.handleCreateAccount)).Methods("POST")
 	router.HandleFunc("/account", handleRequest(s.handleGetAccounts)).Methods("GET")
-	router.HandleFunc("/account/{id}", handleRequest(s.handleGetAccount)).Methods("GET")
+	router.HandleFunc("/account/{id}", withJWTAuth(handleRequest(s.handleGetAccount), s.store)).Methods("GET")
 	router.HandleFunc("/account/{id}", handleRequest(s.handleDeleteAccount)).Methods("DELETE")
 	router.HandleFunc("/transfer", handleRequest(s.handleTransfer)).Methods("POST")
 
@@ -59,6 +59,14 @@ func (s *ApiServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) 
 	}
 
 	account := newAccount(createAccountReq.FirstName, createAccountReq.LastName)
+
+	tokenString, err := createJWT(account)
+
+	if err != nil {
+		return err
+	}
+	fmt.Println("Token string: ", tokenString)
+
 	if err := s.store.CreateAccount(account); err != nil {
 		return err
 	}
@@ -79,7 +87,7 @@ func (s *ApiServer) handleDeleteAccount(w http.ResponseWriter, r *http.Request) 
 	return WriteJSON(w, http.StatusOK, map[string]int{"deleted:": id})
 }
 
-func (s *ApiServer) handleGetAccounts(w http.ResponseWriter, r *http.Request) error {
+func (s *ApiServer) handleGetAccounts(w http.ResponseWriter, _ *http.Request) error {
 	accounts, err := s.store.GetAccounts()
 	if err != nil {
 		return err
