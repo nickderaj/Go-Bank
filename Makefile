@@ -1,3 +1,7 @@
+vet:
+	@go vet ./...
+	shadow ./...
+
 build:
 	@go build -o bin/gobank
 
